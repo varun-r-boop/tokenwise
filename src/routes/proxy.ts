@@ -45,7 +45,7 @@ export const handleProxyRequest = async (req: Request, res: Response): Promise<v
 
     // Add organization ID if provided
     //if (openaiPayload.organizationId) {
-      headers['OpenAI-Organization'] ="org-DL2dlcjSaEofi8FwDjR9TFds";
+      headers['OpenAI-Organization'] ="";
     //}
 
     // Make the request to OpenAI
