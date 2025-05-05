@@ -14,6 +14,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "mongodb": "6.16",
     "mongoose": "^8.0.3",
     "node-fetch": "^2.7.0",
     "uuid": "^9.0.1"
