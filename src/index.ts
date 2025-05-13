@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './db/mongoose';
 import { handleProxyRequest } from './routes/proxy';
+import analyticsRouter from './routes/analytics';
 
 // Load environment variables
 dotenv.config();
@@ -17,11 +18,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.post('/proxy', handleProxyRequest);
+app.use('/analytics', analyticsRouter);
 
 // Health check route
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
 
 // Start server
 const startServer = async () => {
