@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, {  Schema } from 'mongoose';
 
 export interface IRequest  {
   _id: string;

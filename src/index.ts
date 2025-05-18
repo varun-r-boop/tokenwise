@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { connectDB } from './db/mongoose';
 import { handleProxyRequest } from './routes/proxy';
 import analyticsRouter from './routes/analytics';
+import userRoutes from './routes/userRoutes';
+import projectRoutes from './routes/projectRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -17,8 +19,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.post('/proxy', handleProxyRequest);
-app.use('/analytics', analyticsRouter);
+app.post('/api/proxy', handleProxyRequest);
+app.use('/api/analytics', analyticsRouter);
+app.use('/api/auth', userRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
