@@ -54,7 +54,7 @@ export const handleProxyRequest = async (
         index: "prompt_embedding_vector_index",
         score: { $meta: "vectorSearchScore" }
       }
-    }).where("vectorSearchScore").gt(0.85); // Similarity threshold
+    }).where("vectorSearchScore").gt(0.85); //Need to revisit the Similarity threshold
 
     // If similar prompt found, return cached response
     if (similarRequest) {
