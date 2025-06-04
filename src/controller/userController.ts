@@ -1,8 +1,8 @@
-import { getDB } from '../db/mongoose';
+import { getDB } from '../db/mongoose.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import  { IUser } from '../models/user';
-import  { IProject } from '../models/customerProjects';
+import  { IUser } from '../models/user.js';
+import  { IProject } from '../models/customerProjects.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Request, Response } from 'express';
 
@@ -102,7 +102,7 @@ const login = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user._id, email: user.email, projectId : customerProject._id },
       process.env.SECRET_KEY || "1234!@#%<{*&)",
-      { expiresIn: "1h" }
+      { expiresIn: "1week" }
     );
 
     return res

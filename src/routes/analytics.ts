@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDB } from '../db/mongoose';
+import { getDB } from '../db/mongoose.js';
 
 const router = express.Router();
 router.get('/:projectId', async (req, res) => {

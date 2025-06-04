@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { getDB } from '../db/mongoose';
-import { IProject } from '../models/customerProjects';
+import { getDB } from '../db/mongoose.js';
+import { IProject } from '../models/customerProjects.js';
 
 const getProjectDetails = async (req: Request, res: Response) => {
     try {
