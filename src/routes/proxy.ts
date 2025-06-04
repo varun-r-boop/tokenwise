@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import fetch from "node-fetch";
 import { v4 as uuidv4 } from "uuid";
-import RequestModel from "../models/Request";
-import { calculateCost } from "../utils/costCalculator";
-import { OpenAIChatCompletionRequest } from "../models/openAIRequest";
+import RequestModel from "../models/Request.js";
+import { calculateCost } from "../utils/costCalculator.js";
+import { OpenAIChatCompletionRequest } from "../models/openAIRequest.js";
+import { generateEmbedding } from "../utils/embeddingGenerator.js";
 
 interface ProxyRequest {
   openaiEndpoint: string;
@@ -37,6 +38,31 @@ export const handleProxyRequest = async (
       return;
     }
 
+    const prompt = openaiPayload.messages?.map((m) => m.content).join("\n") || "";
+    
+    // Generate embedding for the prompt
+    const promptEmbedding = await generateEmbedding(prompt);
+
+    // Search for similar prompts in the database
+    const similarRequest = await RequestModel.findOne({
+      projectId,
+      $vectorSearch: {
+        queryVector: promptEmbedding,
+        path: "promptEmbedding",
+        numCandidates: 1,
+        limit: 1,
+        index: "prompt_embedding_vector_index",
+        score: { $meta: "vectorSearchScore" }
+      }
+    }).where("vectorSearchScore").gt(0.85); // Similarity threshold
+
+    // If similar prompt found, return cached response
+    if (similarRequest) {
+      console.log("Cache hit: Using cached response for similar prompt");
+      res.status(200).json(similarRequest.response);
+      return;
+    }
+
     const startTime = Date.now();
 
     const openaiResponse = await fetch(`${openaiEndpoint}`, {
@@ -53,8 +79,6 @@ export const handleProxyRequest = async (
     const durationMs = Date.now() - startTime;
 
     const model = openaiPayload.model || "unknown";
-    const prompt =
-      openaiPayload.messages?.map((m) => m.content).join("\n") || "";
 
     const usage = responseData.usage || {
       prompt_tokens: 0,
@@ -70,6 +94,7 @@ export const handleProxyRequest = async (
 
     const costUSD = calculateCost(model, totalTokens);
 
+    // Store the new request with its embedding
     await RequestModel.create({
       _id: uuidv4(),
       projectId,
@@ -77,6 +102,7 @@ export const handleProxyRequest = async (
       openaiEndpoint,
       model,
       prompt,
+      promptEmbedding,
       response: responseData,
       promptTokens,
       responseTokens,

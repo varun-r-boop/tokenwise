@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { connectDB } from './db/mongoose';
-import { handleProxyRequest } from './routes/proxy';
-import analyticsRouter from './routes/analytics';
-import userRoutes from './routes/userRoutes';
-import projectRoutes from './routes/projectRoutes';
+import { connectDB } from './db/mongoose.js';
+import { handleProxyRequest } from './routes/proxy.js';
+import analyticsRouter from './routes/analytics.js';
+import userRoutes from './routes/userRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
 
 // Load environment variables
 dotenv.config();
