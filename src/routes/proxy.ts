@@ -58,7 +58,6 @@ export const handleProxyRequest = async (
 
     // If similar prompt found, return cached response
     if (similarRequest) {
-      console.log("Cache hit: Using cached response for similar prompt");
       res.status(200).json(similarRequest.response);
       return;
     }
