@@ -1,16 +1,6 @@
 # Tokenwise
 
-Tokenwise is a TypeScript-based Express application that provides a robust backend service. The project is built with modern technologies and follows best practices for scalability and maintainability.
-
-## Features
-
-- TypeScript-based Express server
-- MongoDB database integration with Mongoose
-- JWT authentication
-- CORS support
-- Environment variable configuration
-- ESLint for code quality
-- Transformers integration for AI capabilities
+Tokenwise is a proxy server to cache your open-ai API responses and reduce your token usage and bills.
 
 ## Prerequisites
 
