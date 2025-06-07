@@ -12,7 +12,7 @@ Tokenwise is a proxy server to cache your open-ai API responses and reduce your 
 
 1. Clone the repository:
 ```bash
-git clone [your-repository-url]
+git clone https://github.com/varun-r-boop/tokenwise.git
 cd tokenwise
 ```
 
@@ -68,9 +68,9 @@ src/
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b users/username/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+4. Push to the branch (`git push origin users/username/amazing-feature`)
 5. Open a Pull Request
 
 ## License
