@@ -29,8 +29,6 @@ export const handleProxyRequest = async (
   res: Response
 ): Promise<void> => {
   try {
-    // eslint-disable-next-line no-debugger
-    debugger;
     const { openaiEndpoint, customerEndpoint, openaiPayload, projectId } =
       req.body as ProxyRequest;
 
