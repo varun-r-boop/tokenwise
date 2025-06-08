@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import fetch from "node-fetch";
 import { v4 as uuidv4 } from "uuid";
 import RequestModel from "../models/Request.js";
-import CacheEntry from "../models/CacheEntry.js";
 import { calculateCost } from "../utils/costCalculator.js";
 import { OpenAIChatCompletionRequest } from "../models/openAIRequest.js";
 import { generateEmbedding } from "../utils/embeddingGenerator.js";
+import CacheEntry from "../models/CacheEntry.js";
+import { getDB } from "../db/mongoose.js";
 
 interface ProxyRequest {
   openaiEndpoint: string;
@@ -28,6 +29,8 @@ export const handleProxyRequest = async (
   res: Response
 ): Promise<void> => {
   try {
+    // eslint-disable-next-line no-debugger
+    debugger;
     const { openaiEndpoint, customerEndpoint, openaiPayload, projectId } =
       req.body as ProxyRequest;
 
@@ -43,24 +46,40 @@ export const handleProxyRequest = async (
     
     // Generate embedding for the prompt
     const promptEmbedding = await generateEmbedding(prompt);
-
-    // Search for similar prompts in the cache collection
-    const similarCacheEntry = await CacheEntry.findOne({
-      projectId,
-      $vectorSearch: {
-        queryVector: promptEmbedding,
-        path: "promptEmbedding",
-        numCandidates: 1,
-        limit: 1,
-        index: "prompt_embedding_vector_index",
-        score: { $meta: "vectorSearchScore" }
+    const _mongoDbContext = getDB();
+    const cacheEntryEntity = _mongoDbContext.collection('cacheEntry');
+    // Search for similar prompts in the database
+    // Filter results after the query
+    const pipeline =[
+      {
+        '$vectorSearch': {
+          'queryVector': promptEmbedding, 
+          'path': 'promptEmbedding', 
+          'numCandidates': 1000, 
+          'limit': 1, 
+          'index': 'prompt_embedding_vector_index'
+        }
+      }, {
+        '$project': {
+          '_id': 1, 
+          'response': 1, 
+          'score': {
+            '$meta': 'vectorSearchScore'
+          }
+        }
+      }, {
+        '$match': {
+          'score': {
+            '$gte': 0.9
+          }
+        }
       }
-    }).where("vectorSearchScore").gt(0.85);
+    ];
+    const similarRequest = await cacheEntryEntity.aggregate(pipeline).toArray();
 
     // If similar prompt found, return cached response
-    if (similarCacheEntry) {
-      console.log("Cache hit: Using cached response for similar prompt");
-      res.status(200).json(similarCacheEntry.response);
+    if (similarRequest.length > 0) {
+      res.status(200).json(similarRequest[0].response);
       return;
     }
 
@@ -95,7 +114,7 @@ export const handleProxyRequest = async (
 
     const costUSD = calculateCost(model, totalTokens);
 
-    // Store the request in the main requests collection
+    // Store the new request with its embedding
     await RequestModel.create({
       _id: uuidv4(),
       projectId,
@@ -103,6 +122,7 @@ export const handleProxyRequest = async (
       openaiEndpoint,
       model,
       prompt,
+      promptEmbedding,
       response: responseData,
       promptTokens,
       responseTokens,
@@ -120,44 +140,12 @@ export const handleProxyRequest = async (
       prompt,
       promptEmbedding,
       response: responseData,
-      model,
-      promptTokens,
-      responseTokens,
-      totalTokens,
-      costUSD,
-      durationMs,
       createdAt: new Date(),
     });
 
     res.status(openaiResponse.status).json(responseData);
   } catch (error) {
     console.error("Proxy request error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-export const clearCacheByProjectId = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { projectId } = req.params;
-
-    if (!projectId) {
-      res.status(400).json({
-        error: "Missing required field: projectId",
-      });
-      return;
-    }
-
-    const result = await CacheEntry.deleteMany({ projectId });
-
-    res.status(200).json({
-      message: `Successfully cleared cache for project ${projectId}`,
-      deletedCount: result.deletedCount,
-    });
-  } catch (error) {
-    console.error("Clear cache error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
