@@ -5,6 +5,8 @@ import RequestModel from "../models/Request.js";
 import { calculateCost } from "../utils/costCalculator.js";
 import { OpenAIChatCompletionRequest } from "../models/openAIRequest.js";
 import { generateEmbedding } from "../utils/embeddingGenerator.js";
+import CacheEntry from "../models/CacheEntry.js";
+import { getDB } from "../db/mongoose.js";
 
 interface ProxyRequest {
   openaiEndpoint: string;
@@ -27,6 +29,8 @@ export const handleProxyRequest = async (
   res: Response
 ): Promise<void> => {
   try {
+    // eslint-disable-next-line no-debugger
+    debugger;
     const { openaiEndpoint, customerEndpoint, openaiPayload, projectId } =
       req.body as ProxyRequest;
 
@@ -42,23 +46,40 @@ export const handleProxyRequest = async (
     
     // Generate embedding for the prompt
     const promptEmbedding = await generateEmbedding(prompt);
-
+    const _mongoDbContext = getDB();
+    const cacheEntryEntity = _mongoDbContext.collection('cacheEntry');
     // Search for similar prompts in the database
-    const similarRequest = await RequestModel.findOne({
-      projectId,
-      $vectorSearch: {
-        queryVector: promptEmbedding,
-        path: "promptEmbedding",
-        numCandidates: 1,
-        limit: 1,
-        index: "prompt_embedding_vector_index",
-        score: { $meta: "vectorSearchScore" }
+    // Filter results after the query
+    const pipeline =[
+      {
+        '$vectorSearch': {
+          'queryVector': promptEmbedding, 
+          'path': 'promptEmbedding', 
+          'numCandidates': 1000, 
+          'limit': 1, 
+          'index': 'prompt_embedding_vector_index'
+        }
+      }, {
+        '$project': {
+          '_id': 1, 
+          'response': 1, 
+          'score': {
+            '$meta': 'vectorSearchScore'
+          }
+        }
+      }, {
+        '$match': {
+          'score': {
+            '$gte': 0.9
+          }
+        }
       }
-    }).where("vectorSearchScore").gt(0.85); //Need to revisit the Similarity threshold
+    ];
+    const similarRequest = await cacheEntryEntity.aggregate(pipeline).toArray();
 
     // If similar prompt found, return cached response
-    if (similarRequest) {
-      res.status(200).json(similarRequest.response);
+    if (similarRequest.length > 0) {
+      res.status(200).json(similarRequest[0].response);
       return;
     }
 
@@ -109,6 +130,16 @@ export const handleProxyRequest = async (
       costUSD,
       durationMs,
       status: openaiResponse.status,
+      createdAt: new Date(),
+    });
+
+    // Store the response in the cache collection
+    await CacheEntry.create({
+      _id: uuidv4(),
+      projectId,
+      prompt,
+      promptEmbedding,
+      response: responseData,
       createdAt: new Date(),
     });
 
